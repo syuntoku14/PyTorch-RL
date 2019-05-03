@@ -1,5 +1,6 @@
 from collections import namedtuple
 import random
+import numpy as np
 
 # Taken from
 # https://github.com/pytorch/tutorials/blob/master/Reinforcement%20(Q-)Learning%20with%20PyTorch.ipynb
@@ -28,3 +29,30 @@ class Memory(object):
 
     def __len__(self):
         return len(self.memory)
+
+    
+class MultiAgentMemory(object):
+    def __init__(self):
+        self.state = []
+        self.action = []
+        self.mask = []
+        self.next_state = []
+        self.reward = []
+        
+    def push(self, state, action, mask, next_state, reward):
+        """Saves a transition."""
+        self.state += state
+        self.action += action
+        self.mask += mask
+        self.next_state += next_state
+        self.reward += reward
+    
+    def convert_ndarray(self):
+        self.state = np.array(self.state)
+        self.action = np.array(self.action)
+        self.mask = np.array(self.mask)
+        self.next_state = np.array(self.next_state)
+        self.reward = np.array(self.reward)
+        
+    def __len__(self):
+        return len(self.mask)

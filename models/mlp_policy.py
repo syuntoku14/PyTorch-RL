@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 from utils.math import *
-
+from utils.remote_vector_env import dict_to_array
 
 class Policy(nn.Module):
     def __init__(self, state_dim, action_dim, hidden_size=(128, 128), activation='tanh', log_std=0):
@@ -42,6 +42,7 @@ class Policy(nn.Module):
         return action
 
     def get_kl(self, x):
+        # used in trpo
         mean1, log_std1, std1 = self.forward(x)
 
         mean0 = mean1.detach()
@@ -69,3 +70,20 @@ class Policy(nn.Module):
         return cov_inv.detach(), mean, {'std_id': std_id, 'std_index': std_index}
 
 
+class MultiAgentPolicy(Policy):
+    def select_action(self, x):
+        action_dict = {}
+        with torch.no_grad():
+            obss, id_list = dict_to_array(x)    
+
+            x = torch.tensor(obss).float()
+            action_mean, _, action_std = self.forward(x)
+            action = torch.normal(action_mean, action_std).numpy()
+
+            for id_, a_ in zip(id_list, action):
+                env_id, agent_id = id_
+                if not env_id in action_dict:
+                    action_dict.update({env_id: {}})
+                action_dict[env_id].update({agent_id: a_})       
+        
+        return action_dict
